@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Web | Tvoj Profil</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'discord-blurple': '#5865F2',
+                        'discord-dark': '#404EED',
+                        'discord-darker': '#202225',
+                        'discord-gray': '#36393F',
+                        'discord-light-gray': '#2F3136',
+                        'discord-text-gray': '#B9BBBE'
+                    },
+                    fontFamily: {
+                        'sans': ['"Whitney"', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Open Sans', 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        body { background-color: #36393F; margin: 0; }
+        
+        /* Layout */
+        .discord-sidebar { background-color: #202225; width: 72px; }
+        .discord-channels { background-color: #2F3136; width: 240px; }
+        .discord-chat { background-color: #36393F; flex: 1; }
+        
+        /* Ikone i Serveri */
+        .server-icon { width: 48px; height: 48px; border-radius: 50%; background-color: #36393F; display: flex; align-items: center; justify-content: center; color: #DCDDDE; font-weight: 600; margin: 8px 0; transition: border-radius 0.2s, background-color 0.2s; cursor: pointer; }
+        .server-icon:hover { border-radius: 16px; background-color: #5865F2; color: white; }
+        .active-server { background-color: #5865F2; color: white; border-radius: 16px; }
+        
+        /* Kanali i DM */
+        .dm-user { padding: 6px 8px 6px 16px; margin: 1px 8px; border-radius: 4px; color: #8E9297; cursor: pointer; display: flex; align-items: center; }
+        .dm-user:hover { background-color: #3A3C43; color: #DCDDDE; }
+        .active-dm { background-color: #42464D; color: white; }
+        
+        /* User i Statusi */
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; margin-right: 12px; position: relative; }
+        .status-indicator { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #2F3136; position: absolute; bottom: 0; right: 0; }
+        .status-online { background-color: #3BA55D; }
+        .status-idle { background-color: #FAA81A; }
+        
+        /* User Panel (dole levo) */
+        .user-panel { background-color: #292B2F; padding: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .user-info { display: flex; align-items: center; }
+        .user-actions i { cursor: pointer; padding: 4px; border-radius: 4px; color: #B9BBBE; }
+        .user-actions i:hover { background-color: #3A3C43; color: white; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #202225; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2F3136; }
+    </style>
+</head>
+<body class="text-white overflow-hidden">
+
+    <div id="login-screen" class="absolute inset-0 z-50 flex items-center justify-center bg-[#36393F]">
+        <div class="bg-[#2F3136] p-10 rounded-lg shadow-2xl text-center max-w-md w-full border border-gray-800">
+            <i class="fab fa-discord text-6xl text-discord-blurple mb-6 animate-bounce"></i>
+            <h2 class="text-2xl font-bold mb-2 text-white">Dobrodošli!</h2>
+            <p class="text-gray-400 mb-8 text-sm">Aplikacija zahteva prijavu preko Discorda kako bi povukla tvoj profil i servere.</p>
+            <button id="login-btn" class="w-full bg-discord-blurple text-white py-3 rounded font-bold hover:bg-blue-600 transition shadow-lg">
+                Prijava (Discord OAuth2)
+            </button>
+        </div>
+    </div>
+
+    <div id="app-screen" class="hidden flex flex-col h-screen">
+        
+        <header class="bg-discord-dark bg-gradient-to-r from-discord-dark to-discord-blurple py-3 shadow-md z-10">
+            <div class="container mx-auto px-4 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fab fa-discord text-2xl"></i>
+                    <span class="text-lg font-bold">Discord Web</span>
+                </div>
+                <button onclick="logout()" class="bg-black bg-opacity-30 hover:bg-opacity-50 text-white px-4 py-1.5 rounded-full font-medium text-sm transition-colors flex items-center gap-2">
+                    <i class="fas fa-sign-out-alt"></i> Odjavi se
+                </button>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            
+            <div class="discord-sidebar flex flex-col items-center py-3 overflow-y-auto" id="dynamic-server-list">
+                <div class="server-icon active-server mb-2 group relative">
+                    <i class="fab fa-discord text-2xl"></i>
+                </div>
+                <div class="h-px w-8 bg-gray-700 my-2"></div>
+                </div>
+
+            <div class="discord-channels flex flex-col border-r border-gray-800">
+                <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between shadow-sm">
+                    <div class="font-semibold text-lg cursor-pointer hover:text-white">Aktivnosti</div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto px-2 mt-2">
+                    <div class="text-xs font-bold text-gray-500 uppercase mt-4 mb-2 px-2">Konekcije (Uskoro)</div>
+                    <div class="dm-user active-dm">
+                        <div class="user-avatar"><i class="fab fa-steam text-2xl"></i></div>
+                        <div><div class="font-medium text-sm">Steam</div></div>
+                    </div>
+                    <div class="dm-user">
+                        <div class="user-avatar"><i class="fab fa-spotify text-2xl text-green-500"></i></div>
+                        <div><div class="font-medium text-sm">Spotify</div></div>
+                    </div>
+                </div>
+                
+                <div class="user-panel mt-auto">
+                    <div class="user-info">
+                        <div class="user-avatar mr-3">
+                            <img id="my-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" class="w-full h-full rounded-full shadow-md">
+                            <div class="status-indicator status-online"></div>
+                        </div>
+                        <div>
+                            <div id="my-username" class="font-medium text-sm truncate w-24">Učitavanje...</div>
+                            <div id="my-tag" class="text-xs text-discord-text-gray">#0000</div>
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <i class="fas fa-cog hover:text-white"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="discord-chat flex flex-col relative">
+                <div class="px-6 py-4 border-b border-gray-800 flex items-center shadow-sm z-10">
+                    <i class="fas fa-hashtag text-gray-400 mr-2 text-xl"></i>
+                    <h1 class="font-semibold text-lg">Dashboard</h1>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-6 z-10 relative flex flex-col items-center justify-center">
+                    <img id="my-large-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" class="w-32 h-32 rounded-full mb-6 border-4 border-[#202225] shadow-2xl">
+                    <h2 class="text-4xl font-bold mb-3 text-white" id="welcome-title">Dobrodošao!</h2>
+                    <p class="text-gray-400 text-center max-w-md">
+                        Uspešno si povezao svoj Discord nalog. <br><br>
+                        Pogledaj levu stranu — sajt je automatski povukao ikone i imena servera (Guilds) na kojima se trenutno nalaziš!
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ======================================================================
+        // 🚨 OVO SU JEDINE DVE STVARI KOJE MORAŠ DA PROMENIŠ PRE NEGO ŠTO OBJAVIŠ 🚨
+        // ======================================================================
+
+        // 1. Unesi svoj Client ID sa Discord Developer portala (samo brojevi, unutar navodnika)
+        const CLIENT_ID = 'TVOJ_CLIENT_ID_OVDE'; 
+        
+        // 2. Unesi tačan link tvog GitHub repozitorijuma (npr. 'https://tvojeime.github.io/discord-klon/')
+        // PAZI: Mora se tačno poklapati sa "Redirect URI" koji si uneo na Discord portalu!
+        const GITHUB_PAGES_LINK = 'TVOJ_GITHUB_LINK_OVDE';
+
+        // ======================================================================
+        
+        const REDIRECT_URI = encodeURIComponent(GITHUB_PAGES_LINK);
+
+        window.onload = () => {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const accessToken = fragment.get('access_token');
+
+            if (accessToken) {
+                // Sklanja hash iz linka da izgleda lepše
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Menja ekrane
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                
+                fetchDiscordData(accessToken);
+            } else {
+                document.getElementById('login-btn').addEventListener('click', () => {
+                    if (CLIENT_ID === 'TVOJ_CLIENT_ID_OVDE') {
+                        alert("Hej! Zaboravio si da uneseš svoj Client ID u kodu!");
+                        return;
+                    }
+                    const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=identify%20guilds`;
+                    window.location.href = oauthUrl;
+                });
+            }
+        };
+
+        async function fetchDiscordData(token) {
+            try {
+                // Povlačenje korisnika (@me)
+                const userRes = await fetch('https://discord.com/api/users/@me', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const user = await userRes.json();
+
+                const avatarUrl = user.avatar 
+                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256` 
+                    : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator) % 5 || 0}.png`;
+
+                document.getElementById('my-avatar').src = avatarUrl;
+                document.getElementById('my-large-avatar').src = avatarUrl;
+                document.getElementById('my-username').innerText = user.global_name || user.username;
+                document.getElementById('welcome-title').innerText = `Dobrodošao, ${user.global_name || user.username}!`;
+                document.getElementById('my-tag').innerText = user.discriminator === "0" ? `@${user.username}` : `#${user.discriminator}`;
+
+                // Povlačenje servera (@me/guilds)
+                const guildsRes = await fetch('https://discord.com/api/users/@me/guilds', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const guilds = await guildsRes.json();
+
+                const serverList = document.getElementById('dynamic-server-list');
+                
+                // Generisanje ikonica servera levo
+                guilds.slice(0, 15).forEach(guild => {
+                    const iconUrl = guild.icon ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=64` : null;
+                    const serverDiv = document.createElement('div');
+                    serverDiv.className = 'server-icon relative group';
+                    serverDiv.title = guild.name; // Prikazuje ime kad pređeš mišem
+                    
+                    if(iconUrl) {
+                        serverDiv.innerHTML = `<img src="${iconUrl}" class="w-full h-full rounded-full group-hover:rounded-2xl transition-all duration-300 object-cover">`;
+                    } else {
+                        const initials = guild.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+                        serverDiv.innerHTML = `<span class="text-sm font-bold">${initials}</span>`;
+                    }
+                    serverList.appendChild(serverDiv);
+                });
+
+                // Interakcija: Klik na server
+                document.querySelectorAll('.server-icon').forEach(icon => {
+                    icon.addEventListener('click', function() {
+                        document.querySelectorAll('.server-icon').forEach(s => s.classList.remove('active-server'));
+                        this.classList.add('active-server');
+                    });
+                });
+
+            } catch (error) {
+                console.error("API Greška:", error);
+                alert("Greška pri komunikaciji sa Discordom. Probaj opet.");
+                logout();
+            }
+        }
+
+        function logout() {
+            // Brisanje sesije i preusmeravanje nazad na login
+            window.location.href = GITHUB_PAGES_LINK !== 'TVOJ_GITHUB_LINK_OVDE' ? GITHUB_PAGES_LINK : window.location.pathname;
+        }
+    </script>
+</body>
+</html>
